@@ -1,6 +1,6 @@
 import sklearn as sk
 from sklearn.learning_curve import learning_curve
-from sklearn.metrics import roc_curve, auc, confusion_matrix
+from sklearn.metrics import roc_curve, auc, confusion_matrix, accuracy_score, precision_score, recall_score, f1_score
 from sklearn.cross_validation import cross_val_score
 from sklearn.preprocessing import scale
 import numpy as np
@@ -12,11 +12,18 @@ import pandas as pd
 def print_model_evaluation(estimator, Y_test, X_test, Y_all, X_all, cross_val_samples=3):
     """Print learning curve, ROC, confusion matrix, cross-validation scores given a estimator
     Y has to be binarized in advance
+    If cross_val_samples is 1, metrics are based only on the test set provided
     """
-    print print_cross_val_score(estimator, X_all, Y_all, cv=cross_val_samples)
-    print print_cross_val_score(estimator, X_all, Y_all, cv=cross_val_samples, scoring='precision')
-    print print_cross_val_score(estimator, X_all, Y_all, cv=cross_val_samples, scoring='recall')
-    print print_cross_val_score(estimator, X_all, Y_all, cv=cross_val_samples, scoring='f1')
+    if cross_val_samples == 1:
+        print 'Accuracy:\t%.4f' % accuracy_score(Y_test, estimator.predict(X_test))
+        print 'Precision:\t%.4f' % precision_score(Y_test, estimator.predict(X_test))
+        print 'Recall:\t\t%.4f' % recall_score(Y_test, estimator.predict(X_test))
+        print 'F1:\t\t%.4f' % f1_score(Y_test, estimator.predict(X_test))
+    else:
+        print print_cross_val_score(estimator, X_all, Y_all, cv=cross_val_samples)
+        print print_cross_val_score(estimator, X_all, Y_all, cv=cross_val_samples, scoring='precision')
+        print print_cross_val_score(estimator, X_all, Y_all, cv=cross_val_samples, scoring='recall')
+        print print_cross_val_score(estimator, X_all, Y_all, cv=cross_val_samples, scoring='f1')
     plt.figure(figsize=(18,5))
     plt.subplot(1, 2, 1)
     plot_learning_curve(estimator,'Learning curve', X_all, Y_all)
@@ -69,7 +76,7 @@ def convert_features(df, out_var, dummies=True, scaling=True, only_important_fea
     return df.dropna()
 
 def plot_learning_curve(estimator, title, X, y, ylim=None, cv=None,
-                        n_jobs=1, train_sizes=np.linspace(.1, 1.0, 8)):
+                        n_jobs=1, train_sizes=np.logspace(np.log10(0.1),np.log10(1.0),30)):
     """Plot a learning curve for an estimator"""
     plt.title(title)
     if ylim is not None:
@@ -93,6 +100,23 @@ def plot_roc(estimator, title, X_test, Y_test, ylim=None, pos_label=None):
     """Plot a roc curve for an estimator"""
    #if type(estimator) != sk.svm.classes.SVC:
     Y_pred_prob = estimator.predict_proba(X_test)[:,1]
+    #else:
+    #    Y_pred_prob = estimator.decision_function(X_ts)
+    fpr, tpr, thres = roc_curve(Y_test, Y_pred_prob, pos_label=pos_label)
+    plt.plot(fpr, tpr, 'o-')
+    #plt.grid() uncomment if you don't want to use seaborn
+    plt.title(title + ' (AUC=%.2f)' % auc(fpr, tpr))
+    if ylim is not None:
+        plt.ylim(*ylim)
+    plt.xlabel("False Positive Ratio (FPR)")
+    plt.ylabel("True Positive Ratio (TPR)")
+    #plt.legend(loc="best")
+    return plt
+
+def plot_roc_svc(estimator, title, X_test, Y_test, ylim=None, pos_label=None):
+    """Plot a roc curve for an estimator"""
+   #if type(estimator) != sk.svm.classes.SVC:
+    Y_pred_prob = estimator.decision_function(X_test)
     #else:
     #    Y_pred_prob = estimator.decision_function(X_ts)
     fpr, tpr, thres = roc_curve(Y_test, Y_pred_prob, pos_label=pos_label)

@@ -1,0 +1,412 @@
+<!DOCTYPE html>
+<html>
+  <head>
+  <meta charset="utf-8">
+    <title>DSS bank marketing</title>    
+    <script type="text/javascript" src="http://mbostock.github.com/d3/d3.js?2.6.0"></script>
+    <script src="http://labratrevenge.com/d3-tip/javascripts/d3.tip.v0.6.3.js"></script>
+    <link rel="stylesheet" href="http://yui.yahooapis.com/pure/0.5.0/pure-min.css">
+    <style type="text/css">
+
+body {
+  font-family: 'Segoe UI', Frutiger, 'Frutiger Linotype', 'Dejavu Sans', 'Helvetica Neue', Arial, sans-serif;
+  font-size: 11px;
+  margin-left:20px;
+  margin-right:20px;
+  margin-top:20px;
+  margin-bottom:20px;
+}
+
+.bar rect {
+  fill: steelblue;
+}
+.bar rect:hover {
+  fill: brown ;
+}
+.bar text.value {
+  fill: white;
+}
+
+.axis {
+  shape-rendering: crispEdges;
+}
+
+.axis path {
+  fill: none;
+}
+
+.x.axis line {
+  stroke: #fff;
+  stroke-opacity: .8;
+}
+
+.y.axis path {
+  stroke: black;
+}
+
+
+/*Tips format*/
+.d3-tip {
+  line-height: 1;
+  font-weight: bold;
+  padding: 12px;
+  background: rgba(0, 0, 0, 0.8);
+  color: #fff;
+  border-radius: 2px;
+}
+/* Creates a small triangle extender for the tooltip */
+.d3-tip:after {
+  box-sizing: border-box;
+  display: inline;
+  font-size: 10px;
+  width: 100%;
+  line-height: 1;
+  color: rgba(0, 0, 0, 0.8);
+  content: "\25BC";
+  position: absolute;
+  text-align: center;
+}
+/* Style northward tooltips differently */
+.d3-tip.n:after {
+  margin: -1px 0 0 0;
+  top: 100%;
+  left: 0;
+}
+
+aside {
+  background: #4682B4;
+  padding: 0.3em 1em;
+  border-radius: 3px;
+  color: #fff;
+  font-size: 20px;
+}
+
+    </style>    
+  </head>
+  <body>
+  
+<script type="text/javascript">
+//Define variable nrows
+var $_GET = {};
+document.location.search.replace(/\??(?:([^=]+)=([^&]*)&?)/g, function () {
+    function decode(s) {
+        return decodeURIComponent(s.split("+").join(" "));
+    }
+
+    $_GET[decode(arguments[1])] = decode(arguments[2]);
+});
+
+if(typeof $_GET['nrows'] === 'undefined') {
+  var nrows = 200;
+  }
+else {  
+  var nrows = $_GET['nrows'];
+  }
+</script>  
+  
+  
+    <aside><i>Decision Support System</i> for bank marketing calls</aside>
+    <br/><br/><br/>
+    <table id='today' class="pure-table">
+    <thead><tr align='center'><td><b>Rows to display</b></td><td><b>Call day</b></td><td><b>Social and economic context indicators</b></td></thead>
+    <tbody><tr><td>
+    <form action="bank-dss-mvp.html" method="get">
+        <input type="text" name="nrows" id='nrows'><br/>
+        <p align='center'><input type="submit" value="Update"></p>
+    </form>
+    </td><td>
+    <table>
+    <tr><td><div id="option_day">
+        <label for="select_day">Day of the week</label></td><td>
+        <select type='select' onchange='updateData(value);' style='color:steelblue;font-size:1.1em;' name='select_day' id='select_day'>
+            <option value='1' name='mon' selected='true' >Monday</option>
+            <option value='2' name='tue'>Tuesday</option>
+            <option value='3' name='wed'>Wednesday</option>
+            <option value='4' name='thu'>Thursday</option>
+            <option value='5' name='fri'>Friday</option>
+        </select>
+    </div>
+    </td></tr><tr><td>
+    <div id="option"></br></br>
+        <label for="select_month">Month</label></td><td></br></br>
+        <select type='select' onchange='updateData(value);' style='color:steelblue;font-size:1.1em;' name='select_month' id='select_month'>
+            <option value='1' name='Jan' selected='true' >January</option>
+            <option value='2' name='Feb'>February</option>
+            <option value='3' name='Mar'>March</option>
+            <option value='4' name='Apr'>April</option>
+            <option value='5' name='May'>May</option>
+            <option value='6' name='Jun'>June</option>
+            <option value='7' name='Jul'>July</option>
+            <option value='8' name='Aug'>August</option>
+            <option value='9' name='Sep'>September</option>
+            <option value='10' name='Oct'>October</option>
+            <option value='11' name='Nov'>November</option>
+            <option value='12' name='Dec'>December</option>
+        </select>
+    </div>
+    </td></tr></table>
+    </td><td>
+        <table>
+            <tr><td>Employment variation rate % </td><td><input type="number" min="-10" max="10" step="1" value="-2" id="emp_var_rate"><br/></td></tr>
+            <tr><td>Consumer price index % </td><td><input type="number" min="85" max="100" step="2" value="93" id="cons_price_idx"><br/></td></tr>
+            <tr><td>Consumer confidence index % </td><td><input type="number" min="-75" max="50" step="5" value="-25" id="cons_conf_idx"><br/></td></tr>
+            <tr><td>Euribor 3 month rate % </td><td><input type="number" min="0" max="15" step="0.2" value="0.2" id="euribor3m"><br/></td></tr>
+            <tr><td>Number of employees </td><td><input type="number" min="4500" max="5500" step="100" value="4900" id="nr_employed"><br/></td></tr>
+        </table>
+    </td></tr>
+    </tbody></table>
+    
+    <p><i><a href="bank_model_selection-additional.html">Model details and evaluation</a></i></p>
+    <br/>
+  
+<script type="text/javascript">
+
+document.getElementById('nrows').value = nrows
+
+//code for the tip
+var tip = d3.tip()
+  .attr('class', 'd3-tip')
+  .offset(function() {return [0, this.getBBox().width / 2 - 150]})
+  .html(function(d) {
+    return "<strong>Client name:</strong> <span style='color:red'>" + d.client_name + "</span>" + "<br/>" +
+           "<strong>Account:</strong> <span style='color:red'>" + d.account_code + "</span>" + "<br/>" +
+           "<strong>Job:</strong> <span style='color:red'>" + d.job + "</span>" + "<br/>" +
+           "<strong>Age:</strong> <span style='color:red'>" + Math.round(d.age) + "</span>" + "<br/>" +
+           "<strong>Marital status:</strong> <span style='color:red'>" + d.marital + "</span>" + "<br/>" +
+           "<strong>Education:</strong> <span style='color:red'>" + d.education + "</span>" + "<br/>" +
+           "<strong>Default:</strong> <span style='color:red'>" + d.default_yn + "</span>" + "<br/>" +
+           "<strong>Housing:</strong> <span style='color:red'>" + d.housing + "</span>" + "<br/>" +
+           "<strong>Loan:</strong> <span style='color:red'>" + d.loan + "</span>" + "<br/>" +
+           "<strong>Contact:</strong> <span style='color:red'>" + d.contact + "</span>" + "<br/>" +
+           "<strong>Subscribed before:</strong> <span style='color:red'>" + d.poutcome_success + "</span>" + "<br/>" +
+           "<strong>Calls in this campaign:</strong> <span style='color:red'>" + d.campaign + "</span>" + "<br/>" +
+           "<strong>Days from last campaign:</strong> <span style='color:red'>" + d.pdays + "</span>" + "<br/>";
+  })
+
+//build the canvas
+var m = [40, 10, 10, 100],
+    w = 960 - m[1] - m[3],
+    h = Math.round(nrows*2910/200) - m[0] - m[2];
+
+var x = d3.scale.linear().range([0, w]),
+    y = d3.scale.ordinal().rangeBands([0, h], .1);
+
+var xAxis = d3.svg.axis().scale(x).orient("top").tickSize(-h).tickFormat(d3.format("%")),
+    yAxis = d3.svg.axis().scale(y).orient("left").tickSize(0);
+
+var svg = d3.select("body").append("svg")
+    .attr("width", w + m[1] + m[3])
+    .attr("height", h + m[0] + m[2])
+  .append("g")
+    .attr("transform", "translate(" + m[3] + "," + m[0] + ")");
+
+svg.call(tip);
+
+//load data
+var df;
+d3.csv("bank.csv", function(data) {
+       
+  // Parse numbers, and sort by value.
+  data.forEach(function(d) { d.test_prediction = +d.test_prediction; d.pdays = 5;});
+  data.sort(function(a, b) { return b.test_prediction - a.test_prediction; });
+  df = data
+  data = data.slice(0,nrows)
+
+  // Set the scale domain.
+  x.domain([0, d3.max(data, function(d) { return d.test_prediction; })]);
+  y.domain(data.map(function(d) { return d.client_name; }));
+
+  var bar = svg.selectAll("g.bar")
+      .data(data)
+    .enter().append("g")
+      .attr("class", "bar")
+      .attr("transform", function(d) { return "translate(0," + y(d.client_name) + ")"; });
+
+  bar.append("rect")
+      .attr("width", function(d) { return x(d.test_prediction); })
+      .attr("height", y.rangeBand())
+      .on('mouseover', tip.show)
+      .on('mouseout', tip.hide);
+
+  bar.append("text")
+      .attr("class", "value")
+      .attr("x", function(d) { return x(d.test_prediction); })
+      .attr("y", y.rangeBand() / 2)
+      .attr("dx", -3)
+      .attr("dy", ".35em")
+      .attr("text-anchor", "end")
+      .text(function(d) { return ((d.test_prediction*100).toFixed(1)).concat(' %'); });
+
+  svg.append("g")
+      .attr("class", "x axis")
+      .call(xAxis);
+  
+  svg.append("text")
+        .attr("transform", "translate(" + (w / 2) + " ," + -23 + ")")
+        .style("text-anchor", "middle")
+        .style("font-weight", "bold")
+        .style("font-size", "12px")
+        .text("Short term deposit subcription probability");
+
+  svg.append("g")
+      .attr("class", "y axis")
+      .call(yAxis);
+});
+
+//update data from combobox onChange DAY
+function updateData(value) {
+
+    df_updated = df
+    df_updated.forEach(function(d) {d.test_prediction = get_probability(d); });
+    
+    df_updated.forEach(function(d) { d.test_prediction = +d.test_prediction; });
+    df_updated.sort(function(a, b) { return b.test_prediction - a.test_prediction; });    
+    
+    df_updated = df_updated.slice(0,nrows)
+    x.domain([0, d3.max(df_updated, function(d) { return d.test_prediction; })]);
+    y.domain(df_updated.map(function(d) { return d.client_name; }));
+  
+    // Select the section we want to apply our changes to
+    var trans = d3.select("body").transition();
+    
+    // Make the changes
+    var transition = svg.transition().duration(750),
+        delay = function(d, i) { return i * 50; };
+    
+   svg.selectAll("g.bar")
+     .data(df_updated)
+     .transition().delay(2000)
+     .attr("x", function(d) { return x(d.client_name); })
+     .attr("y", function(d) { return y(d.test_prediction); })
+     .attr("width", function(d) { return w - y(d.test_prediction); });
+    
+    svg.selectAll("rect")
+    .data(df_updated)
+    .transition().duration(750)
+    .attr("width", function(d) { return x(d.test_prediction); });
+    
+    transition.select(".x.axis") // change the x axis
+      .call(xAxis);
+    transition.select(".y.axis") // change the y axis
+      .call(yAxis);
+    
+    svg.selectAll("text")
+      .data(df_updated)
+      .transition().duration(750)
+      .attr("class", "value")
+      .attr("x", function(d) { return x(d.test_prediction);})
+      .attr("y", y.rangeBand() / 2)
+      .attr("dx", -3)
+      .attr("dy", ".35em")
+      .attr("text-anchor", "end")
+      .text(function(d) { return ((d.test_prediction*100).toFixed(1)).concat(' %'); });
+};
+
+//returns probability according to the logitic regression model fitted in Python
+function get_probability(point) {   
+
+var log_reg_coefs = [0.0011016183109892109, -0.044565012772232335, -0.0015631534416460651, -0.11968648165583792, -0.25605687024727702, 0.35523061757085284, 0.014408911697206015, -0.05153833797023917, -0.0065358960210990368, 0.0043423572552668327, -0.12709109833791202, -0.025535377463446932, -0.040960567817450395, -0.0359486979686644, 0.19357763109444107, 0.0085203235116412066, -0.097865651614468682, 0.12863113620836045, -0.0077462000438875784, 0.010268392228875906, -0.047482844373541791, -0.026253240761155296, 0.075047463663090869, -0.038564102833537596, -0.010625171558286952, -0.068147658889743251, -0.010717919282721399, 0.0078372215194839352, 0.037353697761519609, 0.04641240646243705, 0.22830655138856448, -0.00063213743354162443, 0.029722148176762699, -0.032666460290451629, 0.027612032150953206, -0.030556344264636954, 0.42502412943962015, 0.024104847195686497, 0.06473918462332505, 0.051660060952860368, 0.28100530477710628, 0.1199884600128575, 0.37279230980191352, -0.66599781966919736, -0.16952068249583097, 0.005341902862758232, -0.08173989615499011, 0.0067064528290420485, -0.23783008968254743, 0.0707100523472739, 0.022165136189618195, 0.1406221202231018, -0.23694374330683804, 0.18363463164275992, 0.055682783570553868];
+var log_reg_intercept = 0.00237367;
+
+   var coord = [point.age, 
+                point.campaign, 
+                5, 
+                point.previous, 
+                document.getElementById('emp_var_rate').value, 
+                document.getElementById('cons_price_idx').value, 
+                document.getElementById('cons_conf_idx').value, 
+                document.getElementById('euribor3m').value, 
+                document.getElementById('nr_employed').value, 
+                point.job_admin, 
+                point.job_blue_collar, 
+                point.job_entrepreneur, 
+                point.job_housemaid, 
+                point.job_management, 
+                point.job_retired,
+                point.job_self_employed,
+                point.job_services, 
+                point.job_student,
+                point.job_technician,
+                point.job_unemployed,
+                point.marital_divorced,
+                point.marital_married,
+                point.marital_single,
+                point.education_basic_4y,
+                point.education_basic_6y,
+                point.education_basic_9y, 
+                point.education_high_school, 
+                point.education_illiterate, 
+                point.education_professional_course, 
+                point.education_university_degree, 
+                point.default_yn_no, 
+                point.default_yn_yes, 
+                point.housing_no, 
+                point.housing_yes, 
+                point.loan_no, 
+                point.loan_yes, 
+                point.contact_cellular, 
+                get_month(4), 
+                get_month(8), 
+                get_month(12), 
+                get_month(7), 
+                get_month(6), 
+                get_month(3), 
+                get_month(5), 
+                get_month(11), 
+                get_month(10), 
+                get_month(9), 
+                get_day(5), 
+                get_day(1), 
+                get_day(4), 
+                get_day(2), 
+                get_day(3), 
+                point.poutcome_failure, 
+                point.poutcome_nonexistent, 
+                point.poutcome_success];
+   
+   var sum = 0;
+    for(var i=0; i< coord.length; i++) {
+    sum += log_reg_coefs[i]*coord[i];
+    }
+   
+   return 1/(1+Math.exp(-(log_reg_intercept + sum)));
+   
+};
+
+//returns 1 if the month is the same of the option combobox
+function get_month(month) {
+    if (month == document.getElementById('select_month').value) { return 1;} else { return 0;};
+}
+//returns 1 if the day is the same of the option combobox
+function get_day(day) {
+    if (day == document.getElementById('select_day').value) { return 1;} else { return 0;};
+}
+
+//update emp_var_rate
+d3.select("#emp_var_rate").on("input", function() {
+  updateData(+this.value);
+});
+
+//update cons_price_idx
+d3.select("#cons_price_idx").on("input", function() {
+  updateData(+this.value);
+});
+
+//update cons_conf_idx
+d3.select("#cons_conf_idx").on("input", function() {
+  updateData(+this.value);
+});
+
+//update euribor3m
+d3.select("#euribor3m").on("input", function() {
+  updateData(+this.value);
+});
+
+//update nr_employed
+d3.select("#nr_employed").on("input", function() {
+  updateData(+this.value);
+});
+
+</script>
+  </body>
+</html>
